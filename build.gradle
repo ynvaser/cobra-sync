@@ -1,0 +1,67 @@
+plugins {
+	id 'org.springframework.boot' version '2.7.1'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+}
+
+group = 'systems.bdev'
+version = null
+sourceCompatibility = '17'
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+jar {
+	enabled = false
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.372'
+	implementation 'com.dropbox.core:dropbox-core-sdk:5.4.4'
+	implementation 'org.apache.commons:commons-compress:1.22'
+	implementation 'org.tukaani:xz:1.9'
+	runtimeOnly 'com.h2database:h2'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+task moveStartScript(type: Copy) {
+	from 'scripts/start.bat'
+	into 'build/libs/'
+}
+
+task moveBashStartScript(type: Copy) {
+	from 'scripts/start.sh'
+	into 'build/libs/'
+}
+
+task moveConfig(type: Copy) {
+	from 'scripts/application.properties'
+	into 'build/libs/'
+}
+
+tasks.register('packageDistribution', Zip) {
+	archiveFileName = "cobra-sync.zip"
+	destinationDirectory = layout.buildDirectory.dir('dist')
+
+	from layout.buildDirectory.dir("libs")
+}
+
+assemble.finalizedBy(moveStartScript)
+moveStartScript.finalizedBy(moveConfig)
+moveConfig.finalizedBy(moveBashStartScript)
+moveBashStartScript.finalizedBy(packageDistribution)
