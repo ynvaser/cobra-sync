@@ -6,4 +6,6 @@ After the job runs, an email is sent to the inbox of your choice about the resul
 No credentials are included, you'll have to get those from Dekkaru over at CubeCobra and your own Dropbox account, respectively.  
 
 How to get Dropbox refresh code:
-https://www.dropbox.com/oauth2/authorize?client_id=<APP_KEY>&token_access_type=offline&response_type=code
+https://www.dropbox.com/oauth2/authorize?client_id=<APP_KEY>&token_access_type=offline&response_type=code  
+  
+Enjoy!
