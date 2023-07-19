@@ -13,6 +13,7 @@ import systems.bdev.cobrasync.persistence.CubeCobraS3FileManifestRepository;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -39,7 +40,7 @@ public class CobraSyncService {
 
     public void run() {
         try {
-            Map<String, Date> keysAndUpdateDates = s3FileDownloader.fetchCubeExportFileNamesAndUpdateDates(BUCKET_NAME, "cube_exports/");
+            Map<String, Date> keysAndUpdateDates = fetchFiles();
             if (forceUpdate || determineIfAnUpdateIsNeeded(keysAndUpdateDates)) {
                 cubeCobraS3FileManifestRepository.deleteAllInBatch();
                 dropboxService.deleteAll(DROPBOX_CUBE_EXPORTS);
@@ -74,6 +75,14 @@ public class CobraSyncService {
         }
     }
 
+    private Map<String, Date> fetchFiles() {
+        Map<String, Date> stringDateMap = new HashMap<>();
+        stringDateMap.putAll(s3FileDownloader.fetchCubeExportFileNamesAndUpdateDates(BUCKET_NAME, "cubes.json"));
+        stringDateMap.putAll(s3FileDownloader.fetchCubeExportFileNamesAndUpdateDates(BUCKET_NAME, "indexToOracleMap.json"));
+        stringDateMap.putAll(s3FileDownloader.fetchCubeExportFileNamesAndUpdateDates(BUCKET_NAME, "simpleCardDict.json"));
+        return stringDateMap;
+    }
+
     private boolean determineIfAnUpdateIsNeeded(Map<String, Date> keysAndUpdateDates) {
         Map<String, Date> persistedKeysAndUpdateDates = cubeCobraS3FileManifestRepository.findAll().stream().collect(Collectors.toMap(CubeCobraS3FileManifestEntity::getId, CubeCobraS3FileManifestEntity::getUpdateDate));
         for (Map.Entry<String, Date> entry : keysAndUpdateDates.entrySet()) {
@@ -90,9 +99,14 @@ public class CobraSyncService {
 
     private Pair<String, String> getFolderAndFileName(String key) {
         int lastSlashIndex = key.lastIndexOf('/');
-        String fileNameWithExtension = key.substring(lastSlashIndex).replaceAll("/", "");
-        String folder = key.substring(0, lastSlashIndex);
-        return Pair.of(folder, fileNameWithExtension);
+        if (lastSlashIndex == -1) {
+            return Pair.of("cube_exports", key);
+        }
+        else {
+            String fileNameWithExtension = key.substring(lastSlashIndex).replaceAll("/", "");
+            String folder = key.substring(0, lastSlashIndex);
+            return Pair.of(folder, fileNameWithExtension);
+        }
     }
 
     public void sendEmail(String subject, Map<?, ?> map) {
